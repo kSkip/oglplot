@@ -1,0 +1,3 @@
+[submodule "deps/shader-utilities"]
+	path = deps/shader-utilities
+	url = https://github.com/kSkip/shader-utilities.git
