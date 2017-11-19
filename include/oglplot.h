@@ -11,7 +11,7 @@ struct Point2D {
     GLfloat y;
 };
 
-typedef float Color[4];
+typedef glm::vec4 Color;
 
 typedef std::vector<Point2D> SeriesData;
 typedef std::vector<Point2D> PointArray;
@@ -36,10 +36,9 @@ class Plot {
         
             public:
             
-                Series();
                 Series(SeriesData data_in);
                 ~Series();
-                void push_back(Point2D point);
+                void append(Point2D point);
                 void refresh();
                 void draw();
                 

@@ -28,23 +28,13 @@ using namespace glm;
  * Globals
  */
 
-Color defaultColors[3] = {{1.0f,0.0f,0.0f,1.0f},
-                          {0.0f,1.0f,0.0f,1.0f},
-                          {0.0f,0.0f,1.0f,1.0f}};                            
+Color defaultColors[3] = {vec4(1.0f,0.0f,0.0f,1.0f),
+                          vec4(0.0f,1.0f,0.0f,1.0f),
+                          vec4(0.0f,0.0f,1.0f,1.0f)};                            
 
 /*
  * Constructors
  */
- 
-Plot::Series::Series(){
-
-    //Color nextColor = defaultColors[next++];
-    //color[0] = nextColor[0];
-    //color[1] = nextColor[1];
-    //color[2] = nextColor[2];
-    //color[3] = nextColor[3];
-    
-}
  
 Plot::Series::Series(SeriesData data_in){
 
@@ -53,12 +43,6 @@ Plot::Series::Series(SeriesData data_in){
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*data.size(), &(data[0]), GL_DYNAMIC_DRAW);
-    
-    //Color nextColor = defaultColors[next++];
-    //color[0] = nextColor[0];
-    //color[1] = nextColor[1];
-    //color[2] = nextColor[2];
-    //color[3] = nextColor[3];
 
 }
 
@@ -84,10 +68,7 @@ Plot::Frame::Frame(){
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*8, &(frame[0]), GL_STATIC_DRAW);
     
-    color[0] = 1.0f;
-    color[1] = 1.0f;
-    color[2] = 1.0f;
-    color[3] = 1.0f;
+    color = vec4(1.0f,1.0f,1.0f,1.0f);
     
 }
 
@@ -148,27 +129,9 @@ Plot::Plot(){
  */
 void Plot::addSeries(SeriesData data_in){
 
-    allSeries.push_back(Series(data_in));
-    
-    float* next = defaultColors[nextColor++ % 3];
-    unsigned int last = allSeries.size()-1;
-    allSeries[last].color[0] = next[0];
-    allSeries[last].color[1] = next[1];
-    allSeries[last].color[2] = next[2];
-    allSeries[last].color[3] = next[3];
-    
-}
-
-void Plot::addSeries(){
-
-    allSeries.push_back(Series());
-
-    float* next = defaultColors[nextColor++ % 3];
-    unsigned int last = allSeries.size()-1;
-    allSeries[last].color[0] = next[0];
-    allSeries[last].color[1] = next[1];
-    allSeries[last].color[2] = next[2];
-    allSeries[last].color[3] = next[3];
+    Series newSeries(data_in);
+    newSeries.color = defaultColors[nextColor++ % 3];
+    allSeries.push_back(newSeries);
     
 }
 
@@ -178,7 +141,7 @@ Plot::Series& Plot::series(unsigned int num){
 
 }
 
-void Plot::Series::push_back(Point2D point){
+void Plot::Series::append(Point2D point){
 
     data.push_back(point);
     refresh();
@@ -397,7 +360,7 @@ void Plot::draw(){
     mat4 frameScale = scale(mat4(1.0f),vec3(frameSize/2.0f,frameSize/2.0f,1.0f));
     glUniformMatrix4fv(uniform_view, 1, GL_FALSE, value_ptr(frameScale));
     
-    glUniform4fv(uniform_color,1,frame.color);
+    glUniform4fv(uniform_color,1,value_ptr(frame.color));
     frame.draw();
     
     glUniform4fv(uniform_clipping,4,value_ptr(clippingPlanes[0]));
@@ -405,7 +368,7 @@ void Plot::draw(){
     glUniformMatrix4fv(uniform_view, 1, GL_FALSE, value_ptr(view));
 
     for_each(allSeries.begin(),allSeries.end(),[this](Series& s){
-        glUniform4fv(uniform_color,1,s.color);
+        glUniform4fv(uniform_color,1,value_ptr(s.color));
         s.draw();
     });
 
