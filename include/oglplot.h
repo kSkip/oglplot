@@ -47,7 +47,7 @@ class Plot {
             
             protected:
             
-                GLuint vbo;
+                GLuint vbo = 0;
                 
         };
 
@@ -81,7 +81,7 @@ class Plot {
                     protected:
                     
                         unsigned int num;
-                        GLuint vbo;
+                        GLuint vbo = 0;
                 
                 };
             

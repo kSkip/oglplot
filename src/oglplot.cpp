@@ -48,7 +48,7 @@ Plot::Series::Series(SeriesData data_in){
 
 Plot::Series::~Series(){
 
-    //glDeleteBuffers(1, &vbo);
+    if(!vbo) glDeleteBuffers(1, &vbo);
 
 }
 
@@ -74,7 +74,7 @@ Plot::Frame::Frame(){
 
 Plot::Frame::~Frame(){
 
-    //glDeleteBuffers(1, &vbo);
+    if(!vbo) glDeleteBuffers(1, &vbo);
 
 }
 
@@ -92,7 +92,7 @@ Plot::Frame::Ticks::Ticks(PointArray ticks){
 
 Plot::Frame::Ticks::~Ticks(){
 
-    //glDeleteBuffers(1, &vbo);
+    if(!vbo) glDeleteBuffers(1, &vbo);
 
 }
 
@@ -150,7 +150,7 @@ void Plot::Series::append(Point2D point){
 
 void Plot::Series::refresh(){
 
-    glDeleteBuffers(1, &vbo);
+    if(!vbo) glDeleteBuffers(1, &vbo);
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*data.size(), &(data[0]), GL_DYNAMIC_DRAW);
