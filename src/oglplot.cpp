@@ -2,7 +2,7 @@
 #include "shader_utilities.h"
 #include <algorithm>
 #include <cmath>
-#include <stdio.h>
+#include <cstdlib>
 
 GLchar vertexShader[] = "#version 410\n"
                         "#extension GL_EXT_gpu_shader4 : enable\n"
@@ -52,47 +52,40 @@ Plot::Series::~Series(){
 
 }
 
-Plot::Frame::Frame(){
-    
-    frame.resize(8);
-    frame[0] = {-1.0f,-1.0f};
-    frame[1] = { 1.0f,-1.0f};
-    frame[2] = { 1.0f,-1.0f};
-    frame[3] = { 1.0f, 1.0f};
-    frame[4] = { 1.0f, 1.0f};
-    frame[5] = {-1.0f, 1.0f};
-    frame[6] = {-1.0f, 1.0f};
-    frame[7] = {-1.0f,-1.0f};
-    
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*8, &(frame[0]), GL_STATIC_DRAW);
-    
-    color = vec4(1.0f,1.0f,1.0f,1.0f);
+Plot::Frame::Axis::Axis(array<GLfloat,4> coords, int flip){
+
+    memcpy(axisCoords,&(coords[0]),4*sizeof(GLfloat));
+    tickDirection = (flip) ? -1.0f : 1.0f;
+
+    glGenBuffers(1, &vboAxis);
+    glBindBuffer(GL_ARRAY_BUFFER, vboAxis);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*4, axisCoords, GL_STATIC_DRAW);
     
 }
 
-Plot::Frame::~Frame(){
+void Plot::Frame::Axis::setTicks(vector<float> ticks, float size){
 
-    if(!vbo) glDeleteBuffers(1, &vbo);
+    /* identify side */
+    vec2 a1 = vec2(axisCoords[0],axisCoords[1]);
+    vec2 a2 = vec2(axisCoords[2],axisCoords[3]);
+    vec2 dir = (a2 - a1) * 0.5f;
+    vec2 tick = vec2(dir.y,-dir.x) * size * tickDirection;
+    
+    PointArray markers;
+    for_each(ticks.begin(),ticks.end(),[&markers,&a1,&dir,&tick](float loc){
+    
+        vec2 p1 = vec2((dir.x==0) ? a1.x : loc,(dir.y==0) ? a1.y : loc);
+        vec2 p2 = tick + p1;
+        markers.push_back({p1.x,p1.y});
+        markers.push_back({p2.x,p2.y});
+    
+    });
+            
+    numTicks = markers.size();
 
-}
-
-Plot::Frame::Ticks::Ticks(){}
-
-Plot::Frame::Ticks::Ticks(PointArray ticks){
-
-    num = ticks.size();
-
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*ticks.size(), &(ticks[0]), GL_DYNAMIC_DRAW);
-
-}
-
-Plot::Frame::Ticks::~Ticks(){
-
-    if(!vbo) glDeleteBuffers(1, &vbo);
+    glGenBuffers(1, &vboTicks);
+    glBindBuffer(GL_ARRAY_BUFFER, vboTicks);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Point2D)*markers.size(), &(markers[0]), GL_STATIC_DRAW);
 
 }
 
@@ -242,33 +235,15 @@ void Plot::yticks(float stride, float size){
 
 void Plot::Frame::xticks(vector<float> ticks, float size){
 
-    PointArray tickmarkers;
-    for_each(ticks.begin(),ticks.end(),[&tickmarkers,&size](float loc){
-    
-        Point2D markerStart = {loc,-1.0f};
-        Point2D markerEnd = {loc,-1.0f-size};
-        tickmarkers.push_back(markerStart);
-        tickmarkers.push_back(markerEnd);
-    
-    });
-    
-    xaxis = Ticks(tickmarkers);
+    top.setTicks(ticks,size);
+    bottom.setTicks(ticks,size);
 
 }
 
 void Plot::Frame::yticks(vector<float> ticks, float size){
 
-    PointArray tickmarkers;
-    for_each(ticks.begin(),ticks.end(),[&tickmarkers,&size](float loc){
-    
-        Point2D markerStart = {-1.0f,loc};
-        Point2D markerEnd = {-1.0f-size,loc};
-        tickmarkers.push_back(markerStart);
-        tickmarkers.push_back(markerEnd);
-    
-    });
-    
-    yaxis = Ticks(tickmarkers);
+    left.setTicks(ticks,size);
+    right.setTicks(ticks,size);
 
 }
 
@@ -321,33 +296,36 @@ void Plot::Series::draw(){
 
 void Plot::Frame::draw(){
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    left.draw();
+    right.draw();
+    top.draw();
+    bottom.draw();
     
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,0);
-    
-    glDrawArrays(GL_LINES, 0, frame.size());
-    
-    glDisableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    
-    xaxis.draw();
-    yaxis.draw();
-
 }
 
-void Plot::Frame::Ticks::draw(){
+void Plot::Frame::Axis::draw(){
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    /* axis line */
+    glBindBuffer(GL_ARRAY_BUFFER, vboAxis);
     
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,0);
     
-    glDrawArrays(GL_LINES, 0, num);
+    glDrawArrays(GL_LINES, 0, 2);
     
     glDisableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    /* tick marks */
+    glBindBuffer(GL_ARRAY_BUFFER, vboTicks);
     
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,0,0);
+    
+    glDrawArrays(GL_LINES, 0, numTicks);
+    
+    glDisableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Plot::draw(){

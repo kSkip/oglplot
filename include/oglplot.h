@@ -1,6 +1,7 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <array>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -59,8 +60,7 @@ class Plot {
         
             public:
             
-                Frame();
-                ~Frame();
+                Frame() : color(glm::vec4(1.0f,1.0f,1.0f,1.0f)){}
                 void xticks(std::vector<float> ticks, float size);
                 void yticks(std::vector<float> ticks, float size);
                 void draw();
@@ -69,27 +69,30 @@ class Plot {
                 
             protected:
             
-                class Ticks {
+                class Axis {
                 
                     public:
                     
-                        Ticks();
-                        Ticks(PointArray ticks);
-                        ~Ticks();
+                        Axis(std::array<GLfloat,4> coords, int flip);
                         void draw();
+                        void setTicks(std::vector<float> ticks, float size);
                         
                     protected:
                     
-                        unsigned int num;
-                        GLuint vbo = 0;
-                
+                        GLfloat axisCoords[4];
+                        float tickDirection;
+                        GLuint vboAxis  = 0;
+                        GLuint vboTicks = 0;
+                        unsigned int numTicks;
+                        
+                        void createBuffer();
+                        
                 };
-            
-                PointArray frame;
-
-                Ticks xaxis;
-                Ticks yaxis;
-                GLuint vbo;
+                
+                Axis   left = Axis({-1.0f,-1.0f,-1.0f,1.0f},1);
+                Axis  right = Axis({1.0f,-1.0f,1.0f, 1.0f},0);
+                Axis    top = Axis({-1.0f,1.0f,1.0f,1.0f},1);
+                Axis bottom = Axis({-1.0f,-1.0f,1.0f,-1.0f},0);
         
         };
         
