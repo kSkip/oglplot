@@ -1,8 +1,8 @@
-#include "oglplot.h"
-#include "shader_utilities.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+
+#include "oglplot.h"
 
 GLchar vertexShader[] = "#version 410\n"
                         "#extension GL_EXT_gpu_shader4 : enable\n"
@@ -94,10 +94,22 @@ Plot::Plot(){
     glEnable(GL_DEPTH_TEST);
     GLint len1 = sizeof(vertexShader)/sizeof(vertexShader[0])-1;
     GLint len2 = sizeof(fragmentShader)/sizeof(fragmentShader[0])-1;
-    
-    GLuint vshader = make_shader(GL_VERTEX_SHADER,vertexShader,&len1);
-    GLuint fshader = make_shader(GL_FRAGMENT_SHADER,fragmentShader,&len2);
-    GLuint program = make_program(vshader,fshader);
+
+    GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
+    GLchar *source = vertexShader;
+    glShaderSource(vshader, 1, (const GLchar**)&source, &len1);
+    glCompileShader(vshader);
+
+    GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
+    source = fragmentShader;
+    glShaderSource(fshader, 1, (const GLchar**)&source, &len2);
+    glCompileShader(fshader);
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vshader);
+    glAttachShader(program, fshader);
+    glLinkProgram(program);
+
     glUseProgram(program);
     
     glEnable(GL_CLIP_DISTANCE0);

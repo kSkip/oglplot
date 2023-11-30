@@ -1,6 +1,5 @@
-#define GL_GLEXT_PROTOTYPES
+#include <GL/glew.h>
 #include <GL/gl.h>
-#include <GL/glu.h>
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
